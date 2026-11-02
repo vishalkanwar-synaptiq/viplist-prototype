@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>viplist prototype</title>
+<!-- Exploratory prototype of the tonight-first design (UXD-1). Sample data only; never app code. -->
+<style>
+:root{
+  --bg:#f4f4f6;--surface:#fff;--ink:#16161d;--muted:#5d5d6b;--line:#e3e3ea;
+  --accent:#5b3df5;--accent-ink:#fff;--ok:#0f7a3d;--ok-bg:#e3f6ea;--warn:#8a5a00;--warn-bg:#fff4d6;
+  --bad:#b42318;--bad-bg:#fde7e5;--radius:14px;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+button,input{font:inherit}
+.proto-bar{position:sticky;top:0;z-index:50;background:#16161d;color:#fff;font-size:13px;padding:8px 12px;display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center}
+.proto-bar b{font-weight:600;margin-right:4px}
+.proto-bar button{background:#2c2c38;color:#fff;border:1px solid #444;border-radius:999px;padding:4px 10px;cursor:pointer}
+.proto-bar button[aria-pressed=true]{background:var(--accent);border-color:var(--accent)}
+.proto-bar label{display:flex;gap:4px;align-items:center}
+.phone{max-width:420px;margin:16px auto 40px;background:var(--surface);min-height:760px;border-radius:24px;box-shadow:0 8px 30px rgba(0,0,0,.12);overflow:hidden;position:relative;display:flex;flex-direction:column}
+@media (max-width:460px){.phone{margin:0;border-radius:0;min-height:calc(100vh - 40px)}}
+header.app{padding:16px 16px 8px;display:flex;justify-content:space-between;align-items:center}
+header.app .brand{font-weight:800;letter-spacing:.5px}
+main{flex:1;padding:0 16px 96px;overflow:auto}
+h1{font-size:24px;margin:8px 0 12px}
+h2{font-size:18px;margin:16px 0 8px}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.field{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:8px 0;background:#fff}
+.field input{border:0;outline:0;flex:1;min-width:0;background:transparent}
+.field svg{width:20px;height:20px;flex:none;color:var(--muted)}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:4px 0 8px}
+.chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;white-space:nowrap;cursor:pointer}
+.chip[aria-pressed=true]{background:var(--ink);color:#fff;border-color:var(--ink)}
+.card{border:1px solid var(--line);border-radius:var(--radius);padding:14px;margin:10px 0;display:flex;gap:12px;align-items:center}
+.card .info{flex:1;min-width:0;cursor:pointer}
+.card .name{font-weight:700}
+.card .where{color:var(--muted);font-size:14px}
+.spots{display:inline-block;margin-top:4px;font-size:13px;font-weight:600;color:var(--ok);background:var(--ok-bg);border-radius:999px;padding:2px 8px}
+.spots.low{color:var(--warn);background:var(--warn-bg)}
+.btn{border:0;border-radius:12px;padding:12px 16px;font-weight:700;cursor:pointer;background:var(--accent);color:var(--accent-ink)}
+.btn.block{width:100%;margin-top:12px}
+.btn.secondary{background:#ececf2;color:var(--ink)}
+.btn.danger{background:var(--bad);color:#fff}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.link{background:none;border:0;color:var(--accent);font-weight:600;cursor:pointer;padding:6px 0}
+.notice{border-radius:12px;padding:10px 12px;margin:10px 0;font-size:14px;background:#f1f0fe}
+.notice.warn{background:var(--warn-bg)}
+.notice.bad{background:var(--bad-bg);color:var(--bad)}
+.notice.ok{background:var(--ok-bg);color:var(--ok)}
+nav.tabs{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(420px,100%);z-index:10;display:flex;border-top:1px solid var(--line);background:#fff}
+nav.tabs button{flex:1;border:0;background:none;padding:10px 0 14px;font-size:12px;color:var(--muted);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px}
+nav.tabs button[aria-current=page]{color:var(--accent);font-weight:700}
+nav.tabs svg{width:22px;height:22px}
+.sheet-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:flex-end;z-index:20}
+.sheet{background:#fff;width:100%;border-radius:20px 20px 0 0;padding:16px 16px 24px;max-height:92%;overflow:auto}
+.sheet .grab{width:40px;height:4px;background:var(--line);border-radius:4px;margin:0 auto 12px}
+.steps{display:flex;gap:6px;margin:4px 0 12px}
+.steps span{flex:1;height:4px;border-radius:4px;background:var(--line)}
+.steps span.on{background:var(--accent)}
+.seg{display:flex;border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:8px 0}
+.seg button{flex:1;border:0;background:#fff;padding:10px;cursor:pointer;font-weight:600}
+.seg button[aria-pressed=true]{background:var(--ink);color:#fff}
+.check{display:flex;gap:10px;align-items:flex-start;margin:10px 0;font-size:14px}
+.check input{margin-top:3px;width:18px;height:18px}
+.code{display:flex;gap:8px;justify-content:center;margin:12px 0}
+.code input{width:44px;height:52px;text-align:center;font-size:22px;border:1px solid var(--line);border-radius:10px}
+.qr-wrap{position:relative;width:240px;margin:12px auto}
+.qr-wrap svg{width:240px;height:240px;display:block}
+.qr-wrap.dim svg{opacity:.35}
+.qr-band{position:absolute;left:-12px;right:-12px;top:50%;transform:translateY(-50%);background:#000;color:#fff;text-align:center;padding:12px 6px}
+.qr-band strong{display:block;font-size:22px;letter-spacing:1px}
+.qr-band span{display:block;font-size:13px;margin-top:2px}
+dl.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;margin:10px 0}
+dl.kv dt{color:var(--muted)}
+dl.kv dd{margin:0;font-weight:600}
+.door-status{border-radius:16px;text-align:center;padding:14px;font-size:26px;font-weight:800;letter-spacing:1px;margin:8px 0}
+.door-status.ok{background:var(--ok-bg);color:var(--ok)}
+.door-status.warn{background:var(--warn-bg);color:var(--warn)}
+.match{font-size:44px;font-weight:800;text-align:center;letter-spacing:6px;margin:4px 0}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}
+.tile{border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center}
+.tile b{display:block;font-size:26px}
+.tile span{font-size:12px;color:var(--muted)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);width:min(388px,calc(100% - 32px));bottom:84px;background:#16161d;color:#fff;border-radius:12px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;z-index:30}
+.toast button{background:none;border:0;color:#b9a9ff;font-weight:700;cursor:pointer}
+.dialog-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:40;padding:16px}
+.dialog{background:#fff;border-radius:16px;padding:18px;max-width:360px}
+.dialog .row{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+.flyer{border:2px dashed var(--line);border-radius:12px;padding:20px;text-align:center;margin:10px 0}
+.badge{font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;background:#ececf2}
+.badge.open{background:var(--ok-bg);color:var(--ok)}
+.badge.closed{background:var(--bad-bg);color:var(--bad)}
+.badge.draft{background:var(--warn-bg);color:var(--warn)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+</style>
+</head>
+<body>
+<div class="proto-bar" role="toolbar" aria-label="Prototype controls">
+  <b>Prototype</b>
+  <button data-entry="guest" aria-pressed="true">Guest app</button>
+  <button data-entry="door" aria-pressed="false">Door check (scan a pass)</button>
+  <button data-entry="promoter" aria-pressed="false">Promoter page</button>
+  <label><input type="checkbox" id="returning"> Returning guest (remembered phone, verified 21+)</label>
+  <button id="reset">Reset</button>
+</div>
+<div class="phone" id="phone" aria-live="polite"></div>
+
+<script>
+/* Sample data. Dates are relative to "tonight". */
+const today = new Date();
+const fmtDate = (d) => d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+const addDays = (n) => { const d = new Date(today); d.setDate(d.getDate() + n); return d; };
+const initial = () => ({
+  entry: "guest", tab: "tonight", view: null, sheet: null, dialog: null, toast: null,
+  returning: document.getElementById("returning").checked,
+  phoneRemembered: document.getElementById("returning").checked,
+  query: "", searchQuery: "", searchDate: "any",
+  events: [
+    { id: 1, name: "Neon Fridays", venue: "The Velvet Room", city: "Austin", day: 0, time: "10:00 PM", total: 20, claimed: 8, used: 0, open: true, published: true },
+    { id: 2, name: "Deep House Sessions", venue: "Warehouse 9", city: "Austin", day: 0, time: "11:00 PM", total: 10, claimed: 7, used: 0, open: true, published: true },
+    { id: 3, name: "Noche Latina", venue: "Club Sol", city: "Austin", day: 0, time: "9:30 PM", total: 30, claimed: 4, used: 0, open: true, published: true },
+    { id: 4, name: "Rooftop Saturdays", venue: "Skyline Terrace", city: "Austin", day: 1, time: "9:00 PM", total: 15, claimed: 2, used: 0, open: true, published: true },
+    { id: 5, name: "Techno Underground", venue: "The Vault", city: "San Antonio", day: 6, time: "11:30 PM", total: 25, claimed: 0, used: 0, open: true, published: true },
+    { id: 6, name: "Throwback Thursday", venue: "Lucky's Lounge", city: "Austin", day: 0, time: "10:00 PM", total: 12, claimed: 12, used: 3, open: true, published: true }
+  ],
+  passes: [],
+  claim: { name: "", mobile: "", email: "", spots: 2, messages: false, promos: false, code: "", step: 1, under21: false },
+  door: { state: "valid", usedAt: null, closedAt: null, pass: null },
+  promoter: { signedIn: false, eventId: null, draft: null }
+});
+let S = initial();
+const app = document.getElementById("phone");
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const left = (e) => e.total - e.claimed;
+const timeNow = () => new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+
+/* A stand-in QR code: a deterministic pattern with the three finder squares. */
+function qr(seed) {
+  let x = seed * 9301 + 49297, cells = "";
+  const n = 25, s = 240 / n;
+  const finder = (r, c) => (r < 7 && c < 7) || (r < 7 && c >= n - 7) || (r >= n - 7 && c < 7);
+  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
+    let on;
+    if (finder(r, c)) { const rr = r % (n - 7) === r ? r : r - (n - 7), cc = c < 7 ? c : c - (n - 7); const R = r < 7 ? r : r - (n - 7); on = R === 0 || R === 6 || cc === 0 || cc === 6 || (R >= 2 && R <= 4 && cc >= 2 && cc <= 4); }
+    else { x = (x * 9301 + 49297) % 233280; on = x / 233280 > 0.5; }
+    if (on) cells += `<rect x="${c * s}" y="${r * s}" width="${s}" height="${s}"/>`;
+  }
+  return `<svg viewBox="0 0 240 240" role="img" aria-label="QR code for this pass"><rect width="240" height="240" fill="#fff"/><g fill="#000">${cells}</g></svg>`;
+}
+
+function render() {
+  let html = "";
+  if (S.entry === "guest") html = guest();
+  else if (S.entry === "door") html = door();
+  else html = promoter();
+  if (S.toast) html += `<div class="toast" role="status"><span>${esc(S.toast.text)}</span>${S.toast.undo ? `<button data-act="undo">Undo</button>` : ""}</div>`;
+  if (S.dialog) html += dialog();
+  app.innerHTML = html;
+}
+
+/* ---------------- Guest app ---------------- */
+const icon = {
+  tonight: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>',
+  search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>',
+  passes: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M8 6v12"/></svg>'
+};
+function guest() {
+  let body;
+  if (S.view && S.view.kind === "event") body = eventPage(S.events.find((e) => e.id === S.view.id));
+  else if (S.view && S.view.kind === "pass") body = passPage(S.passes.find((p) => p.id === S.view.id));
+  else if (S.tab === "tonight") body = tonight();
+  else if (S.tab === "search") body = search();
+  else body = myPasses();
+  const tab = (id, label) => `<button data-tab="${id}" ${S.tab === id && !S.view ? 'aria-current="page"' : ""}>${icon[id]}${label}</button>`;
+  return `<header class="app"><span class="brand">viplist</span></header><main>${body}</main>
+  <nav class="tabs" aria-label="Main">${tab("tonight", "Tonight")}${tab("search", "Search")}${tab("passes", "My passes")}</nav>${S.sheet ? sheet() : ""}`;
+}
+function card(e) {
+  const l = left(e);
+  return `<div class="card"><div class="info" data-open="${e.id}" role="button" tabindex="0">
+    <div class="name">${esc(e.name)}</div><div class="where">${esc(e.venue)} · ${esc(e.city)}</div>
+    <span class="spots ${l <= 3 ? "low" : ""}">${l} spot${l === 1 ? "" : "s"} left</span></div>
+    <button class="btn" data-claim="${e.id}">Claim</button></div>`;
+}
+const claimable = (e) => e.published && e.open && left(e) > 0;
+function tonight() {
+  const q = S.query.toLowerCase();
+  const list = S.events.filter((e) => e.day === 0 && claimable(e) && (!q || (e.name + e.venue + e.city).toLowerCase().includes(q)));
+  return `<h1>Tonight near you</h1>
+  <div class="field">${icon.search}<input id="q" placeholder="Filter by name, venue or area" value="${esc(S.query)}" aria-label="Filter tonight's events"></div>
+  ${list.map(card).join("") || `<div class="notice">Nothing matches tonight. <button class="link" data-tab="search">Search other dates</button></div>`}`;
+}
+function search() {
+  const q = S.searchQuery.toLowerCase();
+  const dateOk = (e) => S.searchDate === "any" || (S.searchDate === "tonight" && e.day === 0) || (S.searchDate === "tomorrow" && e.day === 1) || (S.searchDate === "week" && e.day <= 7);
+  const list = S.events.filter((e) => claimable(e) && dateOk(e) && (!q || (e.name + e.venue + e.city).toLowerCase().includes(q)));
+  const chip = (id, label) => `<button class="chip" data-date="${id}" aria-pressed="${S.searchDate === id}">${label}</button>`;
+  return `<h1>Search</h1>
+  <div class="field">${icon.search}<input id="sq" placeholder="Event name or venue" value="${esc(S.searchQuery)}" aria-label="Search events"></div>
+  <div class="chips">${chip("any", "Any date")}${chip("tonight", "Tonight")}${chip("tomorrow", "Tomorrow")}${chip("week", "This week")}</div>
+  ${list.map((e) => card(e).replace('<div class="where">', `<div class="where">${fmtDate(addDays(e.day))} · `)).join("") || `<div class="notice">No events match. Try a wider date or another area.</div>`}`;
+}
+function eventPage(e) {
+  const held = S.passes.find((p) => p.eventId === e.id);
+  return `<button class="link" data-back>‹ Back</button>
+  <div style="height:150px;border-radius:14px;background:linear-gradient(135deg,#5b3df5,#e0408a);display:flex;align-items:flex-end;padding:14px;color:#fff;font-weight:800;font-size:22px">${esc(e.name)}</div>
+  <h1>${esc(e.name)}</h1>
+  <dl class="kv"><dt>When</dt><dd>${fmtDate(addDays(e.day))}, ${e.time}</dd><dt>Where</dt><dd>${esc(e.venue)}, ${esc(e.city)}</dd><dt>Guest list</dt><dd>${left(e)} spots left</dd></dl>
+  ${held ? `<div class="notice ok">You already hold a pass for this event. <button class="link" data-pass="${held.id}">Open your pass</button></div>`
+         : `<button class="btn block" data-claim="${e.id}">Claim spots</button>`}
+  <div class="notice">Guests must be 21 or over and bring a legal ID.</div>`;
+}
+
+/* The claim sheet: details, code, ID photo, in one sheet. */
+function sheet() {
+  const e = S.events.find((x) => x.id === S.sheet.eventId), c = S.claim;
+  const steps = S.returning ? 1 : 3;
+  const bar = `<div class="steps" aria-hidden="true">${Array.from({ length: steps }, (_, i) => `<span class="${i < c.step ? "on" : ""}"></span>`).join("")}</div>`;
+  let body = "";
+  if (c.step === 1) {
+    const ok = c.name.trim() && c.mobile.replace(/\D/g, "").length >= 10 && c.messages;
+    body = `<h2>Claim spots · ${esc(e.name)}</h2>${bar}
+    <label class="small muted" for="cn">Your name</label><div class="field"><input id="cn" value="${esc(c.name)}" autocomplete="name"></div>
+    <label class="small muted" for="cm">Mobile number</label><div class="field"><input id="cm" value="${esc(c.mobile)}" inputmode="tel" autocomplete="tel" placeholder="(512) 555-0123"></div>
+    <label class="small muted" for="ce">Email (optional)</label><div class="field"><input id="ce" value="${esc(c.email)}" inputmode="email" autocomplete="email"></div>
+    <div class="small muted">How many spots?</div>
+    <div class="seg" role="group" aria-label="Number of spots"><button data-spots="1" aria-pressed="${c.spots === 1}">Just me</button><button data-spots="2" aria-pressed="${c.spots === 2}">Me + 1</button></div>
+    ${c.spots === 2 ? `<div class="small muted">Your plus-one needs a legal ID too, and you check in together.</div>` : ""}
+    <label class="check"><input type="checkbox" id="cmsg" ${c.messages ? "checked" : ""}><span><b>Text me my code, my pass and any changes</b> (required). These messages are how you claim and use your pass. Unsubscribe any time.</span></label>
+    <label class="check"><input type="checkbox" id="cpro" ${c.promos ? "checked" : ""}><span>Send me offers from this promoter (optional)</span></label>
+    <button class="btn block" data-act="claim-next" ${ok ? "" : "disabled"}>${S.returning ? "Get my pass" : "Text me a code"}</button>
+    ${S.returning ? `<div class="small muted" style="margin-top:8px">Phone remembered on this device · verified 21+ until ${fmtDate(addDays(32))}</div>` : ""}`;
+  } else if (c.step === 2) {
+    body = `<h2>Enter your code</h2>${bar}<p class="muted">We texted a 6-digit code to ${esc(c.mobile)}. (Prototype: any 6 digits work.)</p>
+    <div class="field"><input id="cc" inputmode="numeric" maxlength="6" placeholder="••••••" value="${esc(c.code)}" aria-label="6-digit code" style="font-size:24px;letter-spacing:8px;text-align:center"></div>
+    <button class="btn block" data-act="code-next" ${c.code.length === 6 ? "" : "disabled"}>Confirm</button>
+    <button class="link" data-act="resend">Send a new code</button>`;
+  } else if (c.step === 3) {
+    body = `<h2>Check your age</h2>${bar}<p class="muted">Take a photo of your ID. We read your date of birth, then delete the photo straight away.</p>
+    ${c.reading ? `<div class="notice">Reading your ID…</div>` : c.under21 ? `<div class="notice bad">You must be 21 or over to claim spots. Your photo has been deleted.</div>` :
+      `<button class="btn block" data-act="photo">Take a photo of your ID</button>
+       <button class="link small" data-act="photo-under21">Prototype: try an ID showing under 21</button>`}`;
+  }
+  return `<div class="sheet-backdrop" data-act="sheet-close-bg"><div class="sheet" role="dialog" aria-modal="true" aria-label="Claim spots"><div class="grab"></div>
+  <div style="text-align:right"><button class="link" data-act="sheet-close">Cancel</button></div>${body}</div></div>`;
+}
+function passPage(p) {
+  const e = S.events.find((x) => x.id === p.eventId);
+  const band = p.status === "used" ? `<div class="qr-band"><strong>ALREADY USED</strong><span>Used at ${p.usedAt}</span></div>`
+             : p.status === "ended" ? `<div class="qr-band"><strong>GUEST LIST ENDED</strong><span>Claims stopped ${p.closedAt}</span></div>` : "";
+  return `<button class="link" data-back>‹ Back</button><h1>Your pass</h1>
+  <div class="qr-wrap ${band ? "dim" : ""}">${qr(p.id)}${band}</div>
+  <div style="text-align:center;font-weight:800;font-size:20px">${p.spots} ${p.spots === 1 ? "spot" : "spots"}</div>
+  <dl class="kv"><dt>Name</dt><dd>${esc(p.name)}</dd><dt>Date of birth</dt><dd>${p.dob}</dd><dt>Phone</dt><dd>${esc(p.mobile)}</dd>
+  <dt>Event</dt><dd>${esc(e.name)}</dd><dt>Where</dt><dd>${esc(e.venue)}, ${esc(e.city)}</dd><dt>When</dt><dd>${fmtDate(addDays(e.day))}, ${e.time}</dd></dl>
+  <div class="notice">Every guest on this pass needs a legal ID showing they are over 21. ${p.spots === 2 ? "You and your plus-one arrive and check in together." : ""}</div>
+  <div class="notice warn">Valid from 12:01 a.m. on ${fmtDate(addDays(e.day))} until 6:00 a.m. the next day.</div>
+  <button class="btn secondary block" data-act="send-pass">Send to my phone or email</button>`;
+}
+function myPasses() {
+  if (!S.phoneRemembered) return `<h1>My passes</h1><p class="muted">Enter your mobile number and we'll text you a code.</p>
+    <div class="field"><input id="pm" inputmode="tel" placeholder="(512) 555-0123" aria-label="Mobile number"></div>
+    <button class="btn block" data-act="passes-code">Text me a code</button>`;
+  if (!S.passes.length) return `<h1>My passes</h1><div class="notice">No passes yet.</div><button class="btn block" data-tab="tonight">Find events tonight</button>`;
+  return `<h1>My passes</h1>${S.passes.map((p) => { const e = S.events.find((x) => x.id === p.eventId);
+    return `<div class="card"><div class="info" data-pass="${p.id}" role="button" tabindex="0"><div class="name">${esc(e.name)}</div><div class="where">${fmtDate(addDays(e.day))} · ${p.spots} ${p.spots === 1 ? "spot" : "spots"}</div>
+    <span class="badge ${p.status === "valid" ? "open" : "closed"}">${p.status === "valid" ? "Ready" : p.status === "used" ? "Used" : "Guest list ended"}</span></div></div>`; }).join("")}`;
+}
+
+/* ---------------- Door check ---------------- */
+function door() {
+  const p = S.door.pass || S.passes[0] || { id: 99, name: "Jordan Ellis", dob: "Mar 14, 1998", mobile: "(512) 555-0143", spots: 2 };
+  const d = S.door, chip = (id, label) => `<button class="chip" data-door="${id}" aria-pressed="${d.state === id}">${label}</button>`;
+  let body;
+  if (d.state === "valid") body = `<div class="door-status ok">VALID</div>
+    <div class="small muted" style="text-align:center">Matching code, also texted to the guest</div><div class="match">482 913</div>
+    <dl class="kv"><dt>Spots</dt><dd>${p.spots}</dd><dt>Name</dt><dd>${esc(p.name)}</dd><dt>Date of birth</dt><dd>${p.dob}</dd></dl>
+    <div class="notice warn">Check the ID before letting them in.</div>
+    <button class="btn block" style="padding:18px;font-size:20px;background:var(--ok)" data-act="mark-used">Mark used</button>`;
+  else if (d.state === "used") body = `<div class="qr-wrap dim">${qr(p.id)}<div class="qr-band"><strong>ALREADY USED</strong><span>Used at ${d.usedAt || "11:42 PM"}</span></div></div>
+    <dl class="kv"><dt>Spots</dt><dd>${p.spots}</dd><dt>Name</dt><dd>${esc(p.name)}</dd></dl>`;
+  else if (d.state === "ended") body = `<div class="qr-wrap dim">${qr(p.id)}<div class="qr-band"><strong>GUEST LIST ENDED</strong><span>Claims stopped ${d.closedAt || fmtDate(today) + ", 11:15 PM"}</span></div></div>
+    <dl class="kv"><dt>Spots</dt><dd>${p.spots}</dd><dt>Name</dt><dd>${esc(p.name)}</dd></dl>`;
+  else if (d.state === "early") body = `<div class="door-status warn">NOT YET</div><div class="notice warn">This pass can't be marked used before the event date. It works from 12:01 a.m. on the event date.</div>`;
+  else body = `<div class="door-status warn">NO LONGER VALID</div><div class="notice warn">This pass expired at 6:00 a.m. the day after the event.</div>`;
+  return `<header class="app"><span class="brand">viplist · Door check</span></header><main>
+  <div class="small muted">Prototype: see each state</div><div class="chips">${chip("valid", "Valid")}${chip("used", "Already used")}${chip("ended", "Guest list ended")}${chip("early", "Too early")}${chip("late", "After 6 a.m.")}</div>
+  ${body}</main>`;
+}
+
+/* ---------------- Promoter page ---------------- */
+function promoter() {
+  const P = S.promoter;
+  let body;
+  if (!P.signedIn) body = `<h1>Sign in</h1><p class="muted">viplist for promoters</p>
+    <label class="small muted" for="pe">Email or phone</label><div class="field"><input id="pe" value="promoter@velvetroom.example"></div>
+    <label class="small muted" for="pp">Password</label><div class="field"><input id="pp" type="password" value="prototype"></div>
+    <button class="btn block" data-act="sign-in">Sign in</button>`;
+  else if (P.draft) body = postEvent();
+  else if (P.eventId) body = claimsPage(S.events.find((e) => e.id === P.eventId));
+  else {
+    const mine = S.events.filter((e) => e.mine !== false);
+    const row = (e) => `<div class="card"><div class="info" data-pe="${e.id}" role="button" tabindex="0"><div class="name">${esc(e.name)}</div>
+      <div class="where">${e.published ? fmtDate(addDays(e.day)) + " · " + e.claimed + " of " + e.total + " claimed" : "Not published"}</div></div>
+      <span class="badge ${!e.published ? "draft" : e.open ? "open" : "closed"}">${!e.published ? "Draft" : e.open ? "Claims open" : "Claims closed"}</span></div>`;
+    body = `<h1>My events</h1><button class="btn block" data-act="new-event">Post an event</button>
+    <h2>Upcoming</h2>${mine.filter((e) => e.published).map(row).join("")}
+    ${mine.some((e) => !e.published) ? `<h2>Drafts</h2>${mine.filter((e) => !e.published).map(row).join("")}` : ""}`;
+  }
+  return `<header class="app"><span class="brand">viplist · Promoters</span>${P.signedIn ? `<button class="link small" data-act="sign-out">Sign out</button>` : ""}</header><main>${body}</main>`;
+}
+function postEvent() {
+  const d = S.promoter.draft;
+  const ok = d.name && d.venue && d.date && d.time && Number(d.spots) > 0;
+  const f = (id, label, v, type = "text") => `<label class="small muted" for="${id}">${label}</label><div class="field"><input id="${id}" type="${type}" value="${esc(v || "")}"></div>`;
+  return `<button class="link" data-act="cancel-post">‹ My events</button><h1>Post an event</h1>
+  ${d.reading ? `<div class="flyer">Reading your flyer…</div>` : d.read ? `<div class="notice ok">Read from your flyer. Check the details below.</div>`
+    : `<div class="flyer"><p class="muted">Upload the flyer and we'll fill in the details.</p><button class="btn" data-act="upload-flyer">Upload the flyer</button></div>`}
+  ${f("dn", "Event name", d.name)}${f("dv", "Venue", d.venue)}${f("dc", "City", d.city)}${f("dd", "Date", d.date)}${f("dt", "Start time", d.time)}${f("ds", "Guest-list spots", d.spots, "number")}
+  <button class="btn block" data-act="publish" ${ok ? "" : "disabled"}>Publish</button>
+  <button class="btn secondary block" data-act="save-draft">Save as draft</button>`;
+}
+function claimsPage(e) {
+  const unused = e.claimed - e.used;
+  return `<button class="link" data-act="back-events">‹ My events</button><h1>${esc(e.name)}</h1>
+  <div class="muted">${e.published ? fmtDate(addDays(e.day)) + ", " + e.time + " · " : ""}${esc(e.venue)}, ${esc(e.city)}</div>
+  ${e.published ? `<div class="tiles"><div class="tile"><b>${left(e)}</b><span>Unclaimed</span></div><div class="tile"><b>${unused}</b><span>Claimed, unused</span></div><div class="tile"><b>${e.used}</b><span>Used</span></div></div>
+  <span class="badge ${e.open ? "open" : "closed"}">${e.open ? "Claims open" : "Claims closed " + (e.closedAt || "")}</span>
+  ${e.open ? `<button class="btn danger block" data-act="close-claims">Close claims</button>` : ""}
+  <button class="btn secondary block" data-act="contacts">Download opted-in contacts</button>` : `<div class="notice warn">This event is a draft and not published yet.</div>`}
+  <button class="link" style="color:var(--bad);margin-top:12px" data-act="delete-event">Delete event</button>`;
+}
+
+/* ---------------- Dialogs ---------------- */
+function dialog() {
+  const d = S.dialog;
+  return `<div class="dialog-backdrop"><div class="dialog" role="alertdialog" aria-modal="true" aria-labelledby="dt"><h2 id="dt" style="margin-top:0">${d.title}</h2><p>${d.text}</p>
+  <div class="row"><button class="btn secondary" data-act="dialog-cancel">${d.cancel || "Cancel"}</button>${d.ok ? `<button class="btn ${d.danger ? "danger" : ""}" data-act="${d.okAct}">${d.ok}</button>` : ""}</div></div></div>`;
+}
+
+/* ---------------- Interactions ---------------- */
+let toastTimer;
+function toast(text, undo, ms = 3000) { S.toast = { text, undo }; clearTimeout(toastTimer); toastTimer = setTimeout(() => { S.toast = null; render(); }, ms); }
+function startClaim(id) {
+  const held = S.passes.find((p) => p.eventId === id);
+  if (held) { S.sheet = null; S.view = { kind: "pass", id: held.id }; toast("You already hold a pass for this event."); return; }
+  S.claim = { ...initial().claim, spots: 2 };
+  if (S.returning) Object.assign(S.claim, { name: "Jordan Ellis", mobile: "(512) 555-0143", email: "jordan@example.com", messages: true });
+  S.sheet = { eventId: id };
+}
+function issuePass() {
+  const e = S.events.find((x) => x.id === S.sheet.eventId), c = S.claim;
+  const p = { id: Date.now() % 100000, eventId: e.id, spots: c.spots, name: c.name, mobile: c.mobile, dob: "Mar 14, 1998", status: "valid" };
+  S.passes.unshift(p); e.claimed += c.spots; S.phoneRemembered = true;
+  S.sheet = null; S.view = { kind: "pass", id: p.id }; S.door.pass = p;
+  toast("Pass sent by text" + (c.email ? " and email" : ""));
+}
+app.addEventListener("input", (ev) => {
+  const t = ev.target, c = S.claim;
+  const map = { cn: "name", cm: "mobile", ce: "email", cc: "code" };
+  if (map[t.id]) { c[map[t.id]] = t.value; const pos = t.selectionStart; render(); const n = document.getElementById(t.id); if (n) { n.focus(); n.setSelectionRange(pos, pos); } return; }
+  if (t.id === "q" || t.id === "sq") { S[t.id === "q" ? "query" : "searchQuery"] = t.value; const pos = t.selectionStart; render(); const n = document.getElementById(t.id); n.focus(); n.setSelectionRange(pos, pos); return; }
+  const d = S.promoter.draft; const pm = { dn: "name", dv: "venue", dc: "city", dd: "date", dt: "time", ds: "spots" };
+  if (d && pm[t.id]) { d[pm[t.id]] = t.value; const pos = t.selectionStart; render(); const n = document.getElementById(t.id); n.focus(); try { n.setSelectionRange(pos, pos); } catch {} }
+});
+app.addEventListener("change", (ev) => {
+  if (ev.target.id === "cmsg") { S.claim.messages = ev.target.checked; render(); }
+  if (ev.target.id === "cpro") { S.claim.promos = ev.target.checked; render(); }
+});
+app.addEventListener("click", (ev) => {
+  const el = ev.target.closest("[data-tab],[data-open],[data-claim],[data-back],[data-pass],[data-spots],[data-date],[data-door],[data-pe],[data-act]");
+  if (!el) return;
+  const a = el.dataset;
+  if (a.act === "sheet-close-bg" && ev.target !== el) return;
+  if (a.tab) { S.tab = a.tab; S.view = null; }
+  else if (a.open) S.view = { kind: "event", id: +a.open };
+  else if (a.claim) startClaim(+a.claim);
+  else if ("back" in a) S.view = null;
+  else if (a.pass) S.view = { kind: "pass", id: +a.pass };
+  else if (a.spots) S.claim.spots = +a.spots;
+  else if (a.date) S.searchDate = a.date;
+  else if (a.door) S.door.state = a.door;
+  else if (a.pe) S.promoter.eventId = +a.pe;
+  else switch (a.act) {
+    case "sheet-close": case "sheet-close-bg":
+      if (S.claim.name || S.claim.mobile) S.dialog = { title: "Discard this claim?", text: "What you've entered will be lost.", ok: "Discard", okAct: "discard", danger: true, cancel: "Keep going" };
+      else S.sheet = null; break;
+    case "discard": S.sheet = null; S.dialog = null; break;
+    case "claim-next": if (S.returning) issuePass(); else S.claim.step = 2; break;
+    case "code-next": S.claim.step = 3; break;
+    case "resend": toast("New code sent"); break;
+    case "photo": S.claim.reading = true; render(); setTimeout(() => { S.claim.reading = false; issuePass(); render(); }, 1200); return;
+    case "photo-under21": S.claim.reading = true; render(); setTimeout(() => { S.claim.reading = false; S.claim.under21 = true; render(); }, 1200); return;
+    case "send-pass": toast("Pass sent by text" + (S.claim.email ? " and email" : "")); break;
+    case "passes-code": S.phoneRemembered = true; toast("Code confirmed (prototype)"); break;
+    case "mark-used": {
+      const prev = { ...S.door }; S.door.state = "used"; S.door.usedAt = timeNow();
+      if (S.door.pass) S.door.pass.status = "used", S.door.pass.usedAt = S.door.usedAt;
+      S.undo = prev; toast("Marked used", true, 5000); break; }
+    case "undo": if (S.undo) { S.door.state = "valid"; if (S.door.pass) S.door.pass.status = "valid"; S.undo = null; } S.toast = null; break;
+    case "sign-in": S.promoter.signedIn = true; break;
+    case "sign-out": S.promoter = { signedIn: false, eventId: null, draft: null }; break;
+    case "new-event": S.promoter.draft = { name: "", venue: "", city: "", date: "", time: "", spots: "" }; break;
+    case "cancel-post": S.promoter.draft = null; break;
+    case "upload-flyer": S.promoter.draft.reading = true; render(); setTimeout(() => { Object.assign(S.promoter.draft, { reading: false, read: true, name: "Velvet Saturdays", venue: "The Velvet Room", city: "Austin", date: fmtDate(addDays(2)), time: "10:00 PM" }); render(); }, 1200); return;
+    case "publish": case "save-draft": {
+      const d = S.promoter.draft;
+      S.events.push({ id: Date.now() % 100000, name: d.name || "Untitled event", venue: d.venue || "", city: d.city || "", day: 2, time: d.time || "", total: Number(d.spots) || 0, claimed: 0, used: 0, open: true, published: a.act === "publish" });
+      S.promoter.draft = null; toast(a.act === "publish" ? "Published: guests can claim spots now" : "Saved as a draft"); break; }
+    case "back-events": S.promoter.eventId = null; break;
+    case "close-claims": case "close-from-delete": { const e = S.events.find((x) => x.id === S.promoter.eventId);
+      S.dialog ={ title: "Close claims?", text: `${e.claimed - e.used} unused ${e.claimed - e.used === 1 ? "pass" : "passes"} will stop working, and their holders will be told by text. Guests who already used their pass get no message. <b>This can't be undone.</b>`, ok: "Close claims", okAct: "confirm-close", danger: true }; break; }
+    case "confirm-close": { const e = S.events.find((x) => x.id === S.promoter.eventId); e.open = false; e.closedAt = fmtDate(today) + ", " + timeNow();
+      S.passes.filter((p) => p.eventId === e.id && p.status === "valid").forEach((p) => { p.status = "ended"; p.closedAt = e.closedAt; });
+      S.dialog = null; toast(`Claims closed. ${e.claimed - e.used} guests told.`); break; }
+    case "contacts": toast("Downloaded contacts of guests who opted in"); break;
+    case "delete-event": { const e = S.events.find((x) => x.id === S.promoter.eventId);
+      if (e.published && e.claimed > 0 && e.open) S.dialog = { title: "Close claims first", text: "Guests hold passes for this event. Close claims before deleting it.", ok: "Close claims", okAct: "close-from-delete", danger: true };
+      else S.dialog = { title: "Delete this event?", text: "It will disappear for guests and can't be restored.", ok: "Delete event", okAct: "confirm-delete", danger: true }; break; }
+    case "confirm-delete": S.events = S.events.filter((x) => x.id !== S.promoter.eventId); S.promoter.eventId = null; S.dialog = null; toast("Event deleted"); break;
+    case "dialog-cancel": S.dialog = null; break;
+  }
+  render();
+});
+document.querySelectorAll("[data-entry]").forEach((b) => b.addEventListener("click", () => {
+  S.entry = b.dataset.entry; S.sheet = null; S.dialog = null;
+  document.querySelectorAll("[data-entry]").forEach((x) => x.setAttribute("aria-pressed", x === b));
+  render();
+}));
+document.getElementById("returning").addEventListener("change", (ev) => { S.returning = ev.target.checked; if (ev.target.checked) S.phoneRemembered = true; render(); });
+document.getElementById("reset").addEventListener("click", () => { S = initial(); document.querySelectorAll("[data-entry]").forEach((x) => x.setAttribute("aria-pressed", x.dataset.entry === "guest")); render(); });
+render();
+</script>
+</body>
+</html>
